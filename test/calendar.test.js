@@ -2,6 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const calendar = require('../src/calendar');
+const security = require('../src/security');
 
 const ICS = [
   'BEGIN:VCALENDAR',
@@ -71,6 +72,22 @@ test('normalizeUrl accepts webcal and https only', () => {
   assert.strictEqual(calendar.normalizeUrl('http://example.com/cal.ics'), null);
   assert.strictEqual(calendar.normalizeUrl('not a url'), null);
   assert.strictEqual(calendar.normalizeUrl(''), null);
+});
+
+test('security policy permits only validated meeting links', () => {
+  assert.strictEqual(security.isAllowedMeetingUrl('https://meet.google.com/abc-defg-hij'), true);
+  assert.strictEqual(security.isAllowedMeetingUrl('https://acme.zoom.us/j/123456789?pwd=abc'), true);
+  assert.strictEqual(security.isAllowedMeetingUrl('https://evil.example.com/meet'), false);
+  assert.strictEqual(security.isAllowedMeetingUrl('http://meet.google.com/abc-defg-hij'), false);
+  assert.strictEqual(security.isAllowedMeetingUrl('https://meet.google.com.evil.example/abc'), false);
+  assert.strictEqual(security.isAllowedMeetingUrl('https://meet.google.com/abc/extra'), false);
+});
+
+test('security policy allows only the application document to navigate', () => {
+  const expected = require('node:path').resolve('/tmp/crazybuddy/index.html');
+  assert.strictEqual(security.isAllowedNavigation('file:///tmp/crazybuddy/index.html', expected), true);
+  assert.strictEqual(security.isAllowedNavigation('file:///tmp/crazybuddy/other.html', expected), false);
+  assert.strictEqual(security.isAllowedNavigation('https://example.com', expected), false);
 });
 
 test('parseEvents rejects non-ICS and oversize input', () => {

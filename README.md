@@ -1,6 +1,8 @@
 # CerebraQ Companion
 
-CerebraQ Companion is a personal floating desktop companion for hydration, break, and eye-break reminders. This build is pinned for the user's current Windows setup:
+CerebraQ Companion (repository: `pratapgaokar/CrazyBuddy`) is a personal floating desktop companion for hydration, break, and eye-break reminders. The repository root contains the Electron app under `src/`, the Node test suite under `test/`, and the release workflow under `.github/workflows/`.
+
+This build is pinned for the supported development setup:
 
 - Node.js: `20.11.0`
 - npm: `10.2.4`
@@ -11,14 +13,7 @@ Do not use the latest Electron or electron-builder packages with Node 20.11.0. N
 
 ## Setup
 
-1. Stop any stuck install with `Ctrl + C`.
-2. From this project folder, remove the failed install if it exists:
-
-   ```powershell
-   Remove-Item -Recurse -Force node_modules, package-lock.json -ErrorAction SilentlyContinue
-   ```
-
-3. Confirm the version:
+1. Confirm the version:
 
    ```powershell
    node -v
@@ -32,15 +27,15 @@ Do not use the latest Electron or electron-builder packages with Node 20.11.0. N
    10.2.4
    ```
 
-4. Install:
+2. Install from the repository root:
 
    ```powershell
-   npm install
+   npm ci
    ```
 
    This project keeps npm's cache inside `.npm-cache` so the install does not depend on access to the global Windows npm cache.
 
-5. Run:
+3. Run:
 
    ```powershell
    npm start
@@ -55,11 +50,11 @@ npm start
 npm run dist
 ```
 
-`npm run dist` creates a Windows installer in the `release` folder.
+`npm run dist` creates a Windows NSIS x64 installer in the `release/` folder. `npm run release:win` runs the checks first and then builds the installer. `npm run release:publish` does the same and asks electron-builder to publish to GitHub Releases; it requires `GH_TOKEN`.
 
 ## Reproducible setup
 
-The supported runtime is pinned in `.nvmrc` and `package-lock.json`.
+The supported runtime is pinned in `.nvmrc`, dependencies are pinned in `package-lock.json`, and npm uses the project-local `.npm-cache` when using the Makefile.
 
 ```bash
 nvm install
@@ -80,6 +75,20 @@ docker run --rm cerebraq-companion
 The Docker command starts Electron under Xvfb. To create the Windows installer,
 run `npm run dist` on a supported Windows development machine. The generated
 installer is written to `release/` and is not committed.
+
+## Release readiness
+
+- Current version: `0.9.0`.
+- Current automated coverage: **19 tests**, run by `npm test`; `npm run check` validates the JavaScript files used by the app.
+- CI runs `npm ci`, `npm run check`, and `npm test` on pull requests and pushes to `main`. A `v*` tag additionally builds the Windows installer on a GitHub-hosted Windows runner and uploads the `.exe` as a workflow artifact. See `.github/workflows/ci.yml`.
+- GitHub publishing is configured for `pratapgaokar/CrazyBuddy`. A maintainer must create that repository, push a version tag, and provide `GH_TOKEN` when publishing a release.
+- The installer is currently unsigned. Code-signing credentials and a signing provider are external requirements; see `SIGNING-AND-RELEASE.md`.
+
+## Privacy and local data
+
+Settings, daily history, logs, and crash information stay on this PC. Calendar ICS links are stored using Windows DPAPI through Electron `safeStorage` when available (otherwise obfuscated), are not sent to the renderer, and are deleted by **Disconnect**. Calendar data is fetched only from the configured link. Meeting links are opened only after pressing **Join**, and only for the supported Meet, Teams, Zoom, and Webex hosts. The optional developer-alert endpoint listens on loopback only.
+
+The sample `buddy.glb` and `robo.glb` assets are from the three.js examples and must be replaced or relicensed before a commercial distribution. See the remaining external requirements in `LAUNCH-PLAN.md`.
 
 ## What's new in 0.9.0 — rigged avatars (renderer swap)
 
@@ -115,7 +124,7 @@ installer is written to `release/` and is not committed.
 - **First-run setup.** A short welcome panel on first launch (existing users see it once after upgrading).
 - **Companion colours.** *Companion colour* in the panel: Original, Sunset or Ocean.
 - **Developer alerts.** Optional loopback webhook: enable *Developer alerts*, then `POST http://127.0.0.1:17341/notify` with JSON `{"title": "...", "message": "..."}` from build/CI scripts. Localhost only.
-- **Under the hood:** settings/history logic extracted into tested modules (`npm test` — 15 tests covering calendar parsing, settings sanitizing, quiet hours and streaks); a rotating log at `%APPDATA%/cerebraq-companion/logs/companion.log`; local-only crash dumps for support; tray *Check for updates*; auto-update channel configured for GitHub Releases — see `SIGNING-AND-RELEASE.md` (signing steps included).
+- **Under the hood:** settings/history logic extracted into tested modules (`npm test` — 19 tests covering calendar parsing, settings sanitizing, quiet hours, schedules and streaks); a rotating log at `%APPDATA%/cerebraq-companion/logs/companion.log`; local-only crash dumps for support; tray *Check for updates*; auto-update channel configured for GitHub Releases — see `SIGNING-AND-RELEASE.md` (signing steps included).
 
 ## What's new in 0.6.0
 
@@ -184,9 +193,9 @@ installer is written to `release/` and is not committed.
 
 ### Enabling auto-update
 
-1. Put the project on GitHub and add to `build` in `package.json`:
+1. Push this project to `https://github.com/pratapgaokar/CrazyBuddy`; the `build.publish` section in `package.json` is already configured:
    ```json
-   "publish": [{ "provider": "github", "owner": "YOUR_USER", "repo": "YOUR_REPO" }]
+    "publish": [{ "provider": "github", "owner": "pratapgaokar", "repo": "CrazyBuddy" }]
    ```
 2. Set `GH_TOKEN`, bump `version`, then run `npx electron-builder --win nsis --x64 --publish always`.
 3. Installed copies check on launch and every 6 hours, download in the background, and install on quit.

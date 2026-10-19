@@ -14,7 +14,10 @@
     "start": "electron .",
     "check": "node -e \"const fs=require('fs'); for (const f of ['src/main.js','src/preload.js','src/renderer/renderer.js','src/renderer/model.js','src/calendar.js','src/settings.js','src/history.js','src/log.js','src/calendar-worker.js','src/renderer/sounds.js','src/renderer/model3d.js','src/renderer/vendor/GLTFLoader.js']) { new Function(fs.readFileSync(f,'utf8')); console.log('syntax ok:', f); }\"",
     "dist": "electron-builder --win nsis --x64",
-    "test": "node --test test/settings.test.js test/history.test.js test/calendar.test.js"
+    "test": "node --test test/settings.test.js test/history.test.js test/calendar.test.js",
+    "release:check": "npm run check && npm test",
+    "release:win": "npm run release:check && npm run dist",
+    "release:publish": "npm run release:check && npm run dist -- --publish always"
   },
   "dependencies": {
     "electron-store": "8.2.0",
@@ -59,7 +62,7 @@
       {
         "provider": "github",
         "owner": "pratapgaokar",
-        "repo": "cerebraq-companion"
+        "repo": "CrazyBuddy"
       }
     ]
   }

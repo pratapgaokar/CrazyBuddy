@@ -9,6 +9,9 @@ function on(channel, callback) {
 
 contextBridge.exposeInMainWorld('companionApi', {
   getSettings: () => ipcRenderer.invoke('settings:get'),
+  exportData: () => ipcRenderer.invoke('data:export'),
+  clearData: () => ipcRenderer.invoke('data:clear'),
+  openDiagnostics: () => ipcRenderer.invoke('diagnostics:open'),
   setSettings: (settings) => ipcRenderer.invoke('settings:set', settings),
   quitApp: () => ipcRenderer.invoke('app:quit'),
   hideWindow: () => ipcRenderer.invoke('window:hide'),

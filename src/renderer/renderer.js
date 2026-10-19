@@ -109,6 +109,10 @@ const testSoundBtn = document.querySelector('#testSound');
 const birthdayInput = document.querySelector('#birthdayInput');
 const fullscreenToggle = document.querySelector('#fullscreenToggle');
 const animSelect = document.querySelector('#animSelect');
+const exportDataBtn = document.querySelector('#exportData');
+const openDiagnosticsBtn = document.querySelector('#openDiagnostics');
+const clearDataBtn = document.querySelector('#clearData');
+const dataStatus = document.querySelector('#dataStatus');
 
 
 function setBubble(text) {
@@ -986,6 +990,22 @@ testNotification.addEventListener('click', () => {
 
 document.querySelector('#quitApp').addEventListener('click', () => {
   window.companionApi.quitApp();
+});
+
+if (exportDataBtn) exportDataBtn.addEventListener('click', async () => {
+  dataStatus.textContent = 'Choose where to save your export...';
+  const result = await window.companionApi.exportData();
+  dataStatus.textContent = result.ok ? `Exported to ${result.filePath}` : (result.canceled ? 'Export canceled.' : (result.error || 'Export failed.'));
+});
+if (openDiagnosticsBtn) openDiagnosticsBtn.addEventListener('click', async () => {
+  const result = await window.companionApi.openDiagnostics();
+  dataStatus.textContent = result.ok ? 'Opened the local logs folder.' : (result.error || 'Could not open logs folder.');
+});
+if (clearDataBtn) clearDataBtn.addEventListener('click', async () => {
+  if (!window.confirm('Delete settings, history, calendar connections, and focus data from this PC? This cannot be undone.')) return;
+  settings = await window.companionApi.clearData();
+  renderSettings();
+  dataStatus.textContent = 'Local data deleted. Setup has been reset.';
 });
 
 // The x only closes the panel. Reminders keep running either way.

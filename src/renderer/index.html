@@ -38,9 +38,14 @@
         </header>
 
         <section id="onboarding" class="onboarding" hidden>
-          <strong>Welcome! 60-second setup</strong>
-          <p>1. Check your reminder intervals below. 2. Set your daily water goal. 3. Optional: connect your calendar under Meetings for meeting alerts. Everything stays on this PC - nothing is sent anywhere.</p>
-          <button id="onboardDone" class="tiny primary" type="button">Start</button>
+          <strong>Welcome — let’s make this yours</strong>
+          <p>Choose your reminder rhythm and water goal below. You can connect a private calendar later under Meetings. CerebraQ keeps your settings, calendar link, and history on this PC.</p>
+          <ol class="onboarding-steps">
+            <li>Keep or adjust hydration, eye-break, and stretch reminders.</li>
+            <li>Set your daily water goal and quiet hours.</li>
+            <li>Press <b>Save</b>, then optionally connect your calendar.</li>
+          </ol>
+          <button id="onboardDone" class="tiny primary" type="button">Finish setup</button>
         </section>
 
         <div id="reminders" class="reminders"></div>
@@ -180,6 +185,18 @@
             <input id="openAtLogin" type="checkbox"> Launch at startup
           </label>
           <div class="general-row hint">Shortcut: <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> calls the companion</div>
+          <details class="fold privacy-fold">
+            <summary>Privacy, data & support</summary>
+            <div class="fold-body">
+              <p class="hint">Your settings, history, and calendar connection stay on this PC. Calendar links are kept in the main process and encrypted when Windows allows it. CerebraQ does not require an account.</p>
+              <div class="custom-add">
+                <button id="exportData" class="tiny secondary" type="button">Export my data</button>
+                <button id="openDiagnostics" class="tiny secondary" type="button">Open logs folder</button>
+                <button id="clearData" class="tiny secondary" type="button">Delete local data</button>
+              </div>
+              <div id="dataStatus" class="hint" role="status"></div>
+            </div>
+          </details>
           <div class="general-row">
             <span>Close the companion completely</span>
             <button id="quitApp" class="tiny secondary quit" type="button">Quit</button>

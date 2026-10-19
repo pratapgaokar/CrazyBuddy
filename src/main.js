@@ -1,4 +1,4 @@
-const { app, BrowserWindow, crashReporter, globalShortcut, ipcMain, Menu, nativeImage, Notification, powerMonitor, safeStorage, screen, shell, Tray } = require('electron');
+const { app, BrowserWindow, crashReporter, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, powerMonitor, safeStorage, screen, shell, Tray } = require('electron');
 const path = require('node:path');
 const http = require('node:http');
 const { Worker } = require('node:worker_threads');
@@ -8,6 +8,7 @@ const calendar = require('./calendar');
 const settingsMod = require('./settings');
 const historyMod = require('./history');
 const { createLogger } = require('./log');
+const { isAllowedMeetingUrl, isAllowedNavigation } = require('./security');
 
 // Local crash dumps only (never uploaded anywhere). Helps diagnose public
 // installs; the dumps stay in the app's crashDumps folder on the user's PC.
@@ -180,7 +181,9 @@ function publicSettings() {
     hydrationToday: hydrationToday(),
     screenTodayMinutes: Math.floor(screenTodayMs() / 60000),
     historySummary: historyMod.summarize(history || {}, todayKey(), store.get('hydrationGoal') || DEFAULTS.hydrationGoal),
-    focus: focusState()
+    focus: focusState(),
+    appVersion: app.getVersion(),
+    diagnostics: { logFile: log.file() }
   };
 }
 
@@ -845,6 +848,7 @@ function layoutWindow() {
 }
 
 function createWindow() {
+  const indexPath = path.join(__dirname, 'renderer', 'index.html');
   mainWindow = new BrowserWindow({
     width: 800,
     height: 280,
@@ -871,7 +875,23 @@ function createWindow() {
   // through to apps underneath; the renderer turns interaction back on only
   // while the cursor is over the character, bubble or panel.
   mainWindow.setIgnoreMouseEvents(true, { forward: true });
-  mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  const rejectNavigation = (event, url) => {
+    if (!isAllowedNavigation(url, indexPath)) {
+      event.preventDefault();
+      log.warn('blocked renderer navigation', url);
+    }
+  };
+  mainWindow.webContents.on('will-navigate', rejectNavigation);
+  mainWindow.webContents.on('will-redirect', rejectNavigation);
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (isAllowedMeetingUrl(url)) {
+      shell.openExternal(url).catch((err) => log.warn('could not open meeting link', err));
+    } else {
+      log.warn('blocked renderer external link', url);
+    }
+    return { action: 'deny' };
+  });
+  mainWindow.loadFile(indexPath);
   mainWindow.once('ready-to-show', () => mainWindow.showInactive());
 
   // NOTE: do not block 'close'. The NSIS installer/updater asks a running app
@@ -951,6 +971,57 @@ function createTray() {
 /* ------------------------------- IPC ------------------------------- */
 
 ipcMain.handle('settings:get', () => publicSettings());
+
+// Export only user-configurable settings and non-sensitive local statistics.
+// Calendar URLs and other private connection material are deliberately excluded.
+ipcMain.handle('data:export', async () => {
+  const result = await dialog.showSaveDialog({
+    title: 'Export CerebraQ data',
+    defaultPath: `cerebraq-data-${todayKey()}.json`,
+    filters: [{ name: 'JSON data', extensions: ['json'] }]
+  });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    appVersion: app.getVersion(),
+    settings: publicSettings(),
+    hydration: store.get('hydration') || null,
+    screenTime: store.get('screenTime') || null,
+    history: store.get('history') || {}
+  };
+  try {
+    require('node:fs').writeFileSync(result.filePath, JSON.stringify(payload, null, 2), 'utf8');
+    return { ok: true, filePath: result.filePath };
+  } catch (err) {
+    log.warn('data export failed', err);
+    return { ok: false, error: 'Could not write the export file.' };
+  }
+});
+
+ipcMain.handle('diagnostics:open', async () => {
+  const dir = path.join(app.getPath('userData'), 'logs');
+  const error = await shell.openPath(dir);
+  return { ok: !error, error: error || null };
+});
+
+ipcMain.handle('data:clear', () => {
+  store.clear();
+  store.set(DEFAULTS);
+  store.delete('calendarUrl');
+  store.delete('calendarUrls');
+  store.delete('calendarSeen');
+  seenUids = new Set();
+  calendarPrimed = false;
+  meetings = [];
+  pendingInvites = [];
+  calState.lastSync = null;
+  calState.error = null;
+  focusSession = null;
+  resetAllTimers();
+  buildTrayMenu();
+  updateTrayTooltip();
+  return publicSettings();
+});
 
 ipcMain.handle('settings:set', (_event, nextSettings) => {
   store.set(sanitizeSettings(nextSettings));

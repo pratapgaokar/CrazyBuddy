@@ -1,0 +1,959 @@
+:root {
+  color-scheme: light;
+  --ink: #18202b;
+  --muted: #667084;
+  --panel: rgba(255, 255, 255, 0.96);
+  --line: rgba(29, 39, 55, 0.14);
+  --teal: #43c6b6;
+  --coral: #ff8067;
+  --blue: #5b8def;
+  --skin: #ffc693;
+  --skin-shadow: #f0a974;
+  --hair: #202633;
+  --shirt: #2bb7a8;
+  --shorts: #2855a6;
+  --shadow: 0 18px 48px rgba(27, 39, 54, 0.22);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow: hidden;
+  background: transparent;
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+  color: var(--ink);
+  user-select: none;
+  pointer-events: auto;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.shell {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  padding: 18px;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+}
+
+.character {
+  position: absolute;
+  left: 0;
+  bottom: 20px;
+  width: 340px;
+  height: 190px;
+  /* Position is driven by renderer.js (real walking), not CSS transitions.
+     Any transition on transform makes the drawn character lag behind the
+     walk and then snap away, so keep it off. */
+  transition: none !important;
+  transform: translate3d(-200px, 0, 0);
+  will-change: transform;
+  -webkit-app-region: no-drag;
+  /* The 340x190 box itself must never catch clicks (it sits partly on screen
+     even when the companion is "off" to the left). Only the body, bubble and
+     panel are interactive. */
+  pointer-events: none;
+  z-index: 20;
+}
+
+.character.is-off-left {
+  transform: translateX(-180px);
+}
+
+.character.is-at-reminder {
+  transform: translateX(20vw);
+}
+
+.character.is-exiting-right {
+  transform: translateX(calc(100vw + 180px));
+}
+
+.character.is-exiting-left {
+  transform: translateX(-180px);
+}
+
+.character.is-walking .face {
+  animation: walk 420ms ease-in-out infinite;
+}
+
+.character.is-walking .leg.left {
+  animation: stepLeft 420ms ease-in-out infinite;
+}
+
+.character.is-walking .leg.right {
+  animation: stepRight 420ms ease-in-out infinite;
+}
+
+.character.is-walking .arm.left {
+  animation: swingRight 420ms ease-in-out infinite;
+}
+
+.character.is-walking .arm.right {
+  animation: swingLeft 420ms ease-in-out infinite;
+}
+
+.character.is-happy .face {
+  background: linear-gradient(145deg, #ffd4aa, var(--skin));
+}
+
+.character.is-sad .face {
+  background: linear-gradient(145deg, #efc4a0, #dba27b);
+}
+
+.character.is-sad .mouth {
+  bottom: 26px;
+  border-top: 5px solid #151a24;
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
+}
+
+.character.is-happy .mouth {
+  height: 28px;
+  border-bottom-width: 6px;
+}
+
+.character.is-sad .brow.left {
+  transform: rotate(14deg);
+}
+
+.character.is-sad .brow.right {
+  transform: rotate(-14deg);
+}
+
+.character.is-happy .brow.left {
+  transform: rotate(-8deg) translateY(-2px);
+}
+
+.character.is-happy .brow.right {
+  transform: rotate(8deg) translateY(-2px);
+}
+
+.character-body {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 148px;
+  height: 190px;
+  z-index: 1;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+}
+
+.face {
+  position: absolute;
+  left: 17px;
+  top: 14px;
+  width: 114px;
+  height: 118px;
+  border: 4px solid #1d2532;
+  border-radius: 46% 48% 43% 43%;
+  background: linear-gradient(145deg, #ffd4aa, var(--skin));
+  box-shadow: var(--shadow);
+  animation: breathe 3s ease-in-out infinite;
+  z-index: 4;
+}
+
+.face::before {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: -7px;
+  width: 92px;
+  height: 36px;
+  border-radius: 44px 40px 26px 22px;
+  background: var(--hair);
+  transform: rotate(-5deg);
+}
+
+.hair {
+  position: absolute;
+  top: 2px;
+  display: block;
+  width: 42px;
+  height: 34px;
+  border-radius: 80% 20% 80% 30%;
+  background: var(--hair);
+  z-index: 5;
+}
+
+.hair-one {
+  left: 31px;
+  transform: rotate(-28deg);
+}
+
+.hair-two {
+  left: 66px;
+  top: 0;
+  transform: rotate(24deg);
+}
+
+.ear {
+  position: absolute;
+  top: 70px;
+  width: 22px;
+  height: 30px;
+  border: 4px solid #1d2532;
+  border-radius: 50%;
+  background: var(--skin);
+  z-index: 2;
+}
+
+.ear.left {
+  left: 4px;
+}
+
+.ear.right {
+  right: 4px;
+}
+
+.brow {
+  position: absolute;
+  top: 47px;
+  width: 23px;
+  height: 5px;
+  border-radius: 999px;
+  background: #151a24;
+  z-index: 6;
+}
+
+.brow.left {
+  left: 28px;
+  transform: rotate(5deg);
+}
+
+.brow.right {
+  right: 28px;
+  transform: rotate(-5deg);
+}
+
+.shirt {
+  position: absolute;
+  left: 38px;
+  top: 126px;
+  width: 74px;
+  height: 44px;
+  border: 4px solid #1d2532;
+  border-radius: 18px 18px 14px 14px;
+  background: linear-gradient(145deg, #53d8c8, var(--shirt));
+  z-index: 3;
+}
+
+.shirt::after {
+  content: "";
+  position: absolute;
+  left: 19px;
+  bottom: -16px;
+  width: 29px;
+  height: 18px;
+  border: 4px solid #1d2532;
+  border-top: 0;
+  border-radius: 0 0 9px 9px;
+  background: var(--shorts);
+}
+
+.arm {
+  position: absolute;
+  top: 137px;
+  width: 18px;
+  height: 38px;
+  border: 4px solid #1d2532;
+  border-radius: 999px;
+  background: var(--skin);
+  transform-origin: top center;
+  z-index: 2;
+}
+
+.arm.left {
+  left: 25px;
+  transform: rotate(18deg);
+}
+
+.arm.right {
+  right: 25px;
+  transform: rotate(-18deg);
+}
+
+.leg {
+  position: absolute;
+  top: 163px;
+  width: 18px;
+  height: 25px;
+  border: 4px solid #1d2532;
+  border-radius: 999px 999px 8px 8px;
+  background: var(--skin-shadow);
+  transform-origin: top center;
+  z-index: 1;
+}
+
+.leg.left {
+  left: 52px;
+}
+
+.leg.right {
+  right: 52px;
+}
+
+.eye {
+  position: absolute;
+  top: 59px;
+  width: 13px;
+  height: 18px;
+  border-radius: 999px;
+  background: #151a24;
+  animation: blink 5s infinite;
+}
+
+.eye.left {
+  left: 33px;
+}
+
+.eye.right {
+  right: 33px;
+}
+
+.mouth {
+  position: absolute;
+  left: 37px;
+  bottom: 26px;
+  width: 40px;
+  height: 22px;
+  border-bottom: 5px solid #151a24;
+  border-radius: 0 0 999px 999px;
+}
+
+.cheek {
+  position: absolute;
+  top: 81px;
+  width: 16px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 128, 103, 0.58);
+  opacity: 0;
+}
+
+.character.is-happy .cheek {
+  opacity: 1;
+}
+
+.cheek.left {
+  left: 18px;
+}
+
+.cheek.right {
+  right: 18px;
+}
+
+.bubble {
+  position: absolute;
+  left: 128px;
+  top: 18px;
+  width: 188px;
+  min-height: 40px;
+  padding: 9px 11px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 10px 28px rgba(27, 39, 54, 0.14);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.25;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 180ms ease, transform 180ms ease;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+  z-index: 100;
+  isolation: isolate;
+}
+
+.character.is-off-left .bubble,
+.character.is-exiting-left .bubble,
+.character.is-exiting-right .bubble {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
+.bubble-actions {
+  position: relative;
+  z-index: 101;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  width: 100%;
+  margin-top: 8px;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+}
+
+.tiny {
+  position: relative;
+  z-index: 102;
+  min-height: 30px;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+}
+
+.panel {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  width: min(324px, calc(100vw - 28px));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  padding: 14px;
+  display: none;
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
+  z-index: 30;
+}
+
+.panel.open {
+  display: block;
+}
+
+.panel-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+h1 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.icon-button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--muted);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.reminders {
+  display: grid;
+  gap: 10px;
+  padding: 12px 0;
+}
+
+.reminder {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.reminder strong {
+  display: block;
+  font-size: 14px;
+}
+
+.reminder span {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.interval {
+  width: 64px;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.toggle {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--teal);
+  -webkit-app-region: no-drag;
+}
+
+.panel-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.primary,
+.secondary {
+  min-height: 38px;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+}
+
+.primary {
+  background: var(--ink);
+  color: #fff;
+}
+
+.secondary {
+  background: rgba(91, 141, 239, 0.12);
+  color: #2855a6;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.015);
+  }
+}
+
+@keyframes blink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes walk {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+
+@keyframes stepLeft {
+  0%,
+  100% {
+    transform: rotate(14deg);
+  }
+  50% {
+    transform: rotate(-15deg);
+  }
+}
+
+@keyframes stepRight {
+  0%,
+  100% {
+    transform: rotate(-15deg);
+  }
+  50% {
+    transform: rotate(14deg);
+  }
+}
+
+@keyframes swingLeft {
+  0%,
+  100% {
+    transform: rotate(-26deg);
+  }
+  50% {
+    transform: rotate(18deg);
+  }
+}
+
+@keyframes swingRight {
+  0%,
+  100% {
+    transform: rotate(26deg);
+  }
+  50% {
+    transform: rotate(-18deg);
+  }
+}
+
+/* 3D companion model */
+.companion-model {
+  position: absolute;
+  left: -2px;
+  top: -10px;
+  width: 190px;
+  height: 205px;
+  display: block;
+  pointer-events: none;
+  z-index: 10;
+}
+.model-fallback {
+  position: absolute;
+  left: 22px;
+  top: 26px;
+  width: 112px;
+  height: 112px;
+  border-radius: 48%;
+  background: linear-gradient(145deg, #ffd4aa, var(--skin));
+  border: 4px solid #1d2532;
+  z-index: 9;
+}
+
+.general {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.general-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.general-row span {
+  flex: 1;
+}
+
+/* `display: grid` on these would otherwise override the [hidden] attribute. */
+.bubble-actions[hidden] {
+  display: none;
+}
+
+.water-today {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.quiet .time {
+  min-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 2px 6px;
+}
+
+.quiet .to {
+  flex: 0;
+}
+
+.panel {
+  max-height: calc(100vh - 36px);
+  overflow-y: auto;
+}
+
+/* Keep Save / Test reachable when the panel scrolls. */
+.panel-actions {
+  position: sticky;
+  bottom: -14px;
+  margin-bottom: -14px;
+  padding: 10px 0 14px;
+  background: var(--panel);
+}
+
+/* Fit the settings rows inside the panel at any Windows display scaling:
+   rows may wrap instead of being clipped, and the panel never scrolls sideways. */
+.panel { overflow-x: hidden; width: min(344px, calc(100vw - 28px)); }
+.general-row { gap: 6px; flex-wrap: wrap; }
+.general-row span { min-width: 0; }
+.screen-today { color: var(--muted); font-size: 12px; margin-top: -4px; }
+.general .interval { width: 54px; min-height: 30px; flex: 0 0 auto; }
+.quiet .toggle { flex: 1 1 auto; }
+.quiet .time { width: 88px; font-size: 12px; padding: 2px 4px; flex: 0 0 auto; }
+.quiet .time::-webkit-calendar-picker-indicator { display: none; }
+.quiet .time { width: 86px; }
+
+.quit { padding: 0 14px; flex: 0 0 auto; }
+
+/* Compact panel: reminder cards on one row (name | minutes | enabled) so the
+   whole panel fits on shorter / more heavily scaled screens. */
+.reminders { gap: 8px; padding: 10px 0; }
+.reminder { grid-template-columns: 1fr auto auto; gap: 8px; padding: 8px 10px; }
+.reminder .toggle { grid-column: auto; white-space: nowrap; }
+.quiet .time { width: 76px; }
+.quiet .to { flex: 0 0 auto; }
+.panel-actions { padding-top: 8px; }
+
+/* Guided breaks */
+.break-progress { width: 100%; height: 6px; margin-top: 8px; border-radius: 999px; background: rgba(29, 39, 55, 0.12); overflow: hidden; }
+.break-progress[hidden], .skip-break[hidden] { display: none; }
+.break-progress span { display: block; height: 100%; width: 0; border-radius: 999px; background: var(--teal); transition: width 260ms linear; }
+.skip-break { margin-top: 8px; padding: 0 12px; background: rgba(29, 39, 55, 0.08); color: var(--muted); pointer-events: auto; }
+.hint { color: var(--muted); font-size: 12px; }
+kbd { font: inherit; font-size: 11px; padding: 1px 5px; border: 1px solid var(--line); border-radius: 5px; background: #fff; }
+
+/* Onboarding (first run only) */
+.onboarding { margin-top: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: rgba(250, 127, 37, 0.08); font-size: 12px; }
+.onboarding p { margin: 6px 0 8px; }
+
+/* 7-day water history */
+.last7 { display: flex; gap: 6px; align-items: flex-end; height: 44px; margin: 4px 0 6px; }
+.last7 .day { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; height: 100%; }
+.last7 .bar { display: block; width: 14px; min-height: 4px; border-radius: 3px 3px 0 0; background: rgba(29, 39, 55, 0.25); }
+.last7 .bar.met { background: var(--teal, #0e9594); }
+.last7 small { color: var(--muted); font-size: 10px; }
+
+/* Rigged-avatar canvas (0.9.0) */
+.companion-model[hidden] { display: none !important; }
+
+/* Drag + scheduled-reminder editor + sound controls (0.8.0) */
+.character-body { cursor: grab; }
+.character-body:active { cursor: grabbing; }
+.custom-sched { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.custom-sched select, .custom-sched input[type="time"] { min-height: 28px; font-size: 12px; }
+.c-days { display: inline-flex; gap: 3px; }
+.day-chip { position: relative; display: inline-flex; }
+.day-chip input { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; margin: 0; }
+.day-chip span {
+  width: 20px; height: 20px; display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 6px; font-size: 10px; font-weight: 700;
+  color: var(--muted); background: #fff; pointer-events: none;
+}
+.day-chip input:checked + span { background: var(--navy, #091d3d); color: #fff; border-color: var(--navy, #091d3d); }
+input[type="range"] { accent-color: var(--accent, #fa7f25); flex: 1; min-width: 90px; }
+
+/* Companion colour skins (CSS filters over the WebGL canvas) */
+body[data-skin="sunset"] .companion-model { filter: hue-rotate(-18deg) saturate(1.25); }
+body[data-skin="ocean"] .companion-model { filter: hue-rotate(38deg) saturate(1.1); }
+
+/* Meetings + custom reminders (collapsible sections) */
+.fold { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.fold > summary { cursor: pointer; font-weight: 600; font-size: 13px; padding: 4px 0; }
+.fold-body { display: grid; gap: 8px; padding: 8px 0 2px; font-size: 13px; }
+.cal-link { display: flex; gap: 6px; }
+.cal-link input { flex: 1; min-width: 0; min-height: 30px; border: 1px solid var(--line); border-radius: 8px; padding: 2px 8px; font-size: 12px; }
+.cal-link .tiny { padding: 0 10px; flex: 0 0 auto; }
+.hint.error { color: #b3261e; }
+.how summary { font-size: 12px; color: var(--blue); cursor: pointer; }
+.how p { margin: 4px 0; font-size: 12px; color: var(--muted); line-height: 1.35; }
+.custom-list { display: grid; gap: 8px; }
+.custom-item { display: grid; gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.custom-top { display: flex; gap: 6px; align-items: center; }
+.custom-item input[type="text"] { min-width: 0; min-height: 30px; border: 1px solid var(--line); border-radius: 8px; padding: 2px 8px; font-size: 12px; }
+.custom-top .c-label { flex: 1; font-weight: 600; }
+.custom-top .interval { width: 52px; min-height: 30px; flex: 0 0 auto; }
+.custom-top .unit { color: var(--muted); font-size: 12px; }
+.custom-top .c-on { width: 18px; height: 18px; accent-color: var(--teal); flex: 0 0 auto; }
+.custom-top .icon-button { width: 28px; height: 28px; flex: 0 0 auto; }
+.custom-add { display: flex; gap: 6px; }
+.custom-add .tiny { padding: 0 12px; background: rgba(29, 39, 55, 0.08); color: var(--ink); }
+.fold-body > .tiny { justify-self: start; padding: 0 12px; background: rgba(29, 39, 55, 0.08); color: var(--muted); }
+
+/* Grid children must be allowed to shrink, or wide inputs push the row past the panel edge. */
+.fold-body, .custom-list, .custom-item { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.custom-item input[type="text"], .cal-link input { width: 100%; box-sizing: border-box; }
+.custom-top .c-label { width: auto; }
+.custom-top { min-width: 0; }
+
+/* ================================================================
+   UI REFRESH 0.7.1 — CerebraQ brand theme (navy #091D3D / orange
+   #FA7F25). Purely visual: every selector below restyles existing
+   markup; no layout geometry the renderer depends on is changed
+   (character box, bubble anchor, panel position all stay put).
+   ================================================================ */
+:root {
+  --ink: #16233c;
+  --muted: #5d6b82;
+  --panel: rgba(255, 255, 255, 0.98);
+  --line: rgba(9, 29, 61, 0.13);
+  --teal: #1fb6a6;
+  --navy: #091d3d;
+  --accent: #fa7f25;
+  --accent-dark: #e56a0c;
+  --card: #f5f8fc;
+  --shadow: 0 24px 60px rgba(9, 29, 61, 0.28), 0 4px 16px rgba(9, 29, 61, 0.12);
+}
+
+body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+::selection { background: rgba(250, 127, 37, 0.28); }
+
+/* ---- Panel shell ---- */
+.panel {
+  border-radius: 16px;
+  border: 1px solid rgba(9, 29, 61, 0.16);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+.panel.open { animation: cq-panel-in 220ms cubic-bezier(0.22, 0.9, 0.32, 1); }
+@keyframes cq-panel-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.panel::-webkit-scrollbar { width: 8px; }
+.panel::-webkit-scrollbar-thumb { background: rgba(9, 29, 61, 0.18); border-radius: 999px; }
+.panel::-webkit-scrollbar-thumb:hover { background: rgba(9, 29, 61, 0.32); }
+.panel::-webkit-scrollbar-track { background: transparent; }
+
+.panel-header { align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.panel-header h1 {
+  font-size: 17px; font-weight: 700; letter-spacing: -0.01em; color: var(--navy);
+  padding-left: 10px; border-left: 4px solid var(--accent); border-radius: 2px;
+}
+.panel-header p, #status {
+  display: inline-block; margin-top: 6px; padding: 2px 9px;
+  background: rgba(250, 127, 37, 0.12); color: #8a4307;
+  border-radius: 999px; font-size: 11px; font-weight: 600;
+}
+
+/* ---- Buttons ---- */
+.tiny, .panel-actions button, .custom-add .tiny, .fold-body > .tiny {
+  border-radius: 10px; font-weight: 600;
+  transition: background 140ms ease, border-color 140ms ease, transform 120ms ease, box-shadow 140ms ease;
+}
+.tiny.primary, .panel-actions .primary, button.primary {
+  background: linear-gradient(180deg, #ff8c38, var(--accent-dark));
+  color: #fff; border: 1px solid rgba(160, 74, 4, 0.35);
+  box-shadow: 0 4px 12px rgba(250, 127, 37, 0.35);
+}
+.tiny.primary:hover, .panel-actions .primary:hover, button.primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.tiny.primary:active, .panel-actions .primary:active, button.primary:active { transform: translateY(0); filter: brightness(0.97); }
+.tiny.secondary, .panel-actions .secondary, button.secondary, .custom-add .tiny, .fold-body > .tiny {
+  background: #fff; color: var(--ink); border: 1px solid var(--line);
+  box-shadow: 0 1px 3px rgba(9, 29, 61, 0.06);
+}
+.tiny.secondary:hover, .panel-actions .secondary:hover, button.secondary:hover, .custom-add .tiny:hover, .fold-body > .tiny:hover {
+  border-color: rgba(9, 29, 61, 0.34); background: #f7fafd; transform: translateY(-1px);
+}
+.tiny:disabled { opacity: 0.45; transform: none; box-shadow: none; }
+.icon-button { border-radius: 9px; transition: background 140ms ease, color 140ms ease, border-color 140ms ease; }
+.icon-button:hover { background: #fff1e4; color: #b3500a; border-color: rgba(250, 127, 37, 0.45); }
+.quit:hover { background: #fdecec; color: #a11f16; border-color: rgba(179, 38, 30, 0.4); }
+
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+
+/* ---- Inputs ---- */
+input[type="number"], input[type="time"], input[type="text"], input[type="password"], select {
+  border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink);
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+input[type="number"]:focus, input[type="time"]:focus, input[type="text"]:focus, input[type="password"]:focus, select:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px rgba(250, 127, 37, 0.22); outline: none;
+}
+.interval { text-align: center; font-weight: 700; color: var(--navy); }
+select { min-height: 30px; padding: 2px 6px; font-size: 12px; font-weight: 600; }
+
+/* ---- Toggle switches (all .toggle checkboxes) ---- */
+.toggle input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  width: 34px; height: 20px; flex: 0 0 auto; margin: 0;
+  border-radius: 999px; background: #cbd5e1; border: 1px solid rgba(9, 29, 61, 0.12);
+  position: relative; cursor: pointer; vertical-align: -5px;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+.toggle input[type="checkbox"]::after {
+  content: ""; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(9, 29, 61, 0.35);
+  transition: transform 160ms ease;
+}
+.toggle input[type="checkbox"]:checked { background: var(--teal); border-color: rgba(14, 116, 104, 0.4); }
+.toggle input[type="checkbox"]:checked::after { transform: translateX(14px); }
+.toggle input[type="checkbox"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.custom-top .c-on { accent-color: var(--teal); width: 17px; height: 17px; cursor: pointer; }
+
+/* ---- Reminder cards + custom items ---- */
+.reminder, .custom-item {
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+.reminder:hover, .custom-item:hover { border-color: rgba(9, 29, 61, 0.26); box-shadow: 0 3px 10px rgba(9, 29, 61, 0.07); }
+.reminder strong, .custom-top .c-label { color: var(--navy); }
+.reminder span { color: var(--muted); }
+
+/* ---- Collapsible sections ---- */
+.fold { border-top: 1px solid var(--line); }
+.fold > summary {
+  padding: 7px 9px; margin: 0 -4px; border-radius: 9px; color: var(--navy);
+  transition: background 140ms ease;
+}
+.fold > summary:hover { background: #eef3f9; }
+.fold > summary::marker { color: var(--accent); }
+.how summary { color: var(--accent-dark); }
+
+/* ---- Stats ---- */
+.water-today {
+  font-weight: 700; color: var(--navy); font-size: 13px;
+  background: linear-gradient(180deg, rgba(31, 182, 166, 0.13), rgba(31, 182, 166, 0.06));
+  border: 1px solid rgba(31, 182, 166, 0.3); border-radius: 10px; padding: 7px 10px;
+}
+.screen-today { font-size: 11.5px; }
+.last7 .bar { border-radius: 4px 4px 2px 2px; background: rgba(9, 29, 61, 0.16); transition: height 300ms ease; }
+.last7 .bar.met { background: linear-gradient(180deg, #2dd4bf, var(--teal)); }
+
+/* ---- Onboarding ---- */
+.onboarding {
+  background: linear-gradient(180deg, rgba(250, 127, 37, 0.14), rgba(250, 127, 37, 0.06));
+  border: 1px solid rgba(250, 127, 37, 0.4); border-radius: 12px; padding: 12px;
+}
+.onboarding strong { color: var(--navy); font-size: 13px; }
+
+/* ---- Speech bubble ---- */
+.bubble {
+  border-radius: 14px; border: 1px solid rgba(9, 29, 61, 0.12);
+  box-shadow: 0 14px 34px rgba(9, 29, 61, 0.2);
+  font-size: 12.5px; font-weight: 550; color: var(--ink);
+}
+.bubble::before {
+  content: ""; position: absolute; left: 22px; bottom: -6px; z-index: -1;
+  width: 12px; height: 12px; transform: rotate(45deg);
+  background: rgba(255, 255, 255, 0.95); border-right: 1px solid rgba(9, 29, 61, 0.12); border-bottom: 1px solid rgba(9, 29, 61, 0.12);
+}
+.break-progress span { background: linear-gradient(90deg, var(--teal), #2dd4bf); }
+
+/* ---- Footer actions ---- */
+.panel-actions { border-top: 1px solid var(--line); background: var(--panel); }
+.panel-actions .primary, .panel-actions .secondary { min-height: 34px; padding: 0 16px; }
+
+.hint { line-height: 1.4; }
+.general-row { padding: 2px 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .panel.open { animation: none; }
+  .tiny, .panel-actions button, .icon-button, .reminder, .custom-item, .last7 .bar,
+  .toggle input[type="checkbox"], .toggle input[type="checkbox"]::after { transition: none; }
+}

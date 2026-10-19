@@ -1,0 +1,66 @@
+{
+  "name": "cerebraq-companion",
+  "version": "0.9.0",
+  "description": "A personal floating desktop companion: reminders, guided breaks, meeting alerts, focus mode and streaks. All data stays on your PC.",
+  "main": "src/main.js",
+  "author": "CerebraQ",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=20.11.0 <21",
+    "npm": ">=10.2.4"
+  },
+  "scripts": {
+    "start": "electron .",
+    "check": "node -e \"const fs=require('fs'); for (const f of ['src/main.js','src/preload.js','src/renderer/renderer.js','src/renderer/model.js','src/calendar.js','src/settings.js','src/history.js','src/log.js','src/calendar-worker.js','src/renderer/sounds.js','src/renderer/model3d.js','src/renderer/vendor/GLTFLoader.js']) { new Function(fs.readFileSync(f,'utf8')); console.log('syntax ok:', f); }\"",
+    "dist": "electron-builder --win nsis --x64",
+    "test": "node --test test/settings.test.js test/history.test.js test/calendar.test.js"
+  },
+  "dependencies": {
+    "electron-store": "8.2.0",
+    "electron-updater": "6.1.8",
+    "ical.js": "1.5.0"
+  },
+  "devDependencies": {
+    "electron": "29.4.6",
+    "electron-builder": "24.13.3"
+  },
+  "build": {
+    "appId": "com.cerebraq.companion",
+    "productName": "CerebraQ Companion",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CerebraQ Companion"
+    },
+    "artifactName": "CerebraQ-Companion-Setup-${version}.${ext}",
+    "asar": true,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "pratapgaokar",
+        "repo": "cerebraq-companion"
+      }
+    ]
+  }
+}

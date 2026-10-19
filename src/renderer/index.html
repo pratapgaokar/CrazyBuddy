@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'none'">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CerebraQ Companion</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <div id="character" class="character is-home">
+        <button id="characterBody" class="character-body" aria-label="Open CerebraQ Companion controls">
+          <canvas id="companionModel" class="companion-model" aria-hidden="true"></canvas>
+          <canvas id="gl3d" class="companion-model" aria-hidden="true" hidden></canvas>
+          <span id="modelFallback" class="model-fallback" hidden>
+            <span class="face"></span>
+          </span>
+        </button>
+        <div id="bubble" class="bubble">
+          <span id="bubbleText">Ready when you are.</span>
+          <div id="breakProgress" class="break-progress" hidden><span id="breakBar"></span></div>
+          <button id="skipBreak" class="tiny secondary skip-break" type="button" hidden>Skip</button>
+          <div id="bubbleActions" class="bubble-actions" hidden>
+            <button id="yesAction" class="tiny primary" data-reminder-action="yes" type="button">Yes</button>
+            <button id="laterAction" class="tiny secondary" data-reminder-action="later" type="button">Remind me later</button>
+          </div>
+        </div>
+      </div>
+
+      <section id="panel" class="panel" aria-label="Companion controls">
+        <header class="panel-header">
+          <div>
+            <h1>CerebraQ Companion</h1>
+            <p id="status">Keeping an eye on your day.</p>
+          </div>
+          <button id="hideWindow" class="icon-button" aria-label="Hide companion">×</button>
+        </header>
+
+        <section id="onboarding" class="onboarding" hidden>
+          <strong>Welcome! 60-second setup</strong>
+          <p>1. Check your reminder intervals below. 2. Set your daily water goal. 3. Optional: connect your calendar under Meetings for meeting alerts. Everything stays on this PC - nothing is sent anywhere.</p>
+          <button id="onboardDone" class="tiny primary" type="button">Start</button>
+        </section>
+
+        <div id="reminders" class="reminders"></div>
+
+        <details class="fold" id="meetingsFold">
+          <summary>Meetings (Teams / Google Meet)</summary>
+          <div class="fold-body">
+            <label class="general-row toggle"><input id="calEnabled" type="checkbox"> Alert me before meetings</label>
+            <div class="cal-link">
+              <input id="calUrl" type="password" placeholder="Paste your calendar's private ICS link" autocomplete="off" spellcheck="false" aria-label="Calendar ICS link">
+              <button id="calConnect" class="tiny secondary" type="button">Connect</button>
+              <button id="calDisconnect" class="tiny secondary" type="button" hidden>Disconnect</button>
+            </div>
+            <div id="calStatus" class="hint"></div>
+            <label class="general-row">
+              <span>Alert me</span>
+              <input id="calLead" class="interval" type="number" min="1" max="60" aria-label="Minutes before a meeting"> min before
+            </label>
+            <label class="general-row toggle"><input id="calAtStart" type="checkbox"> Also alert when it starts</label>
+            <label class="general-row toggle"><input id="calInvites" type="checkbox"> Tell me about new invites</label>
+            <details class="how">
+              <summary>How do I get the link?</summary>
+              <p><b>Google Calendar:</b> Settings, pick your calendar, then copy <i>Secret address in iCal format</i>.</p>
+              <p><b>Outlook / Teams:</b> Settings, Calendar, Shared calendars, Publish a calendar, then copy the <i>ICS</i> link.</p>
+              <p>The link is private. It is stored encrypted on this PC and only used to read your calendar.</p>
+            </details>
+            <button id="testMeeting" class="tiny secondary" type="button">Test meeting alert</button>
+          </div>
+        </details>
+
+        <details class="fold" id="customFold">
+          <summary>Custom reminders</summary>
+          <div class="fold-body">
+            <div id="customList" class="custom-list"></div>
+            <div class="custom-add">
+              <button id="addCode" class="tiny secondary" type="button">+ Code break</button>
+              <button id="addBreathing" class="tiny secondary" type="button">+ Breathing</button>
+              <button id="addPosture" class="tiny secondary" type="button">+ Posture</button>
+              <button id="addCustom" class="tiny secondary" type="button">+ Custom</button>
+            </div>
+          </div>
+        </details>
+
+        <details class="fold" id="focusFold">
+          <summary>Focus (Pomodoro)</summary>
+          <div class="fold-body">
+            <div id="focusStatus" class="hint"></div>
+            <label class="general-row">
+              <span>Focus sound</span>
+              <select id="ambientSelect" aria-label="Focus ambient sound">
+                <option value="off">Off</option>
+                <option value="rain">Rain</option>
+                <option value="storm">Thunderstorm</option>
+                <option value="birds">Garden birds</option>
+                <option value="sea">Sea shore</option>
+                <option value="forest">Forest</option>
+                <option value="cafe">Cafe</option>
+              </select>
+              <button id="testSound" class="tiny secondary" type="button">Test sound</button>
+            </label>
+            <div class="custom-add">
+              <button class="tiny secondary" type="button" data-focus-start="25">25 min</button>
+              <button class="tiny secondary" type="button" data-focus-start="50">50 min</button>
+              <input id="focusMinutes" class="interval" type="number" min="5" max="180" value="40" aria-label="Custom focus minutes">
+              <button class="tiny secondary" type="button" data-focus-start="custom">Start custom</button>
+              <button id="focusStop" class="tiny secondary" type="button">Stop</button>
+            </div>
+          </div>
+        </details>
+
+        <div class="general">
+          <div id="waterToday" class="water-today"></div>
+          <div id="screenToday" class="screen-today"></div>
+          <div id="streakToday" class="screen-today"></div>
+          <div id="last7" class="last7" aria-label="Water, last 7 days"></div>
+          <label class="general-row">
+            <span>Daily water goal</span>
+            <input id="hydrationGoal" class="interval" type="number" min="1" max="30" aria-label="Daily water goal in glasses"> glasses
+          </label>
+          <div class="general-row quiet">
+            <label class="toggle"><input id="quietEnabled" type="checkbox"> Quiet hours</label>
+            <input id="quietStart" class="time" type="time" aria-label="Quiet hours start">
+            <span class="to">to</span>
+            <input id="quietEnd" class="time" type="time" aria-label="Quiet hours end">
+          </div>
+          <label class="general-row">
+            <span>Remind me later after</span>
+            <input id="snoozeMinutes" class="interval" type="number" min="1" max="120" aria-label="Snooze minutes"> min
+          </label>
+          <label class="general-row toggle">
+            <input id="guidedBreaks" type="checkbox"> Guided breaks (countdown after Yes)
+          </label>
+          <label class="general-row toggle">
+            <input id="morningBriefing" type="checkbox"> Morning briefing (meetings + goal, once a day)
+          </label>
+          <label class="general-row toggle">
+            <input id="fullscreenToggle" type="checkbox"> Stay quiet during fullscreen apps, presentations and calls
+          </label>
+          <label class="general-row toggle">
+            <input id="chimeToggle" type="checkbox"> Soft chime when I arrive
+          </label>
+          <label class="general-row">
+            <span>Sound volume</span>
+            <input id="volumeRange" type="range" min="0" max="100" step="5" aria-label="Sound volume">
+          </label>
+          <label class="general-row">
+            <span>Your birthday (optional)</span>
+            <input id="birthdayInput" class="interval" type="text" placeholder="MM-DD" maxlength="5" style="width:70px" aria-label="Your birthday, month and day">
+          </label>
+          <label class="general-row">
+            <span>Animations</span>
+            <select id="animSelect" aria-label="Animation level">
+              <option value="full">Full</option>
+              <option value="calm">Calm (no idle winks)</option>
+            </select>
+          </label>
+          <label class="general-row toggle">
+            <input id="devAlerts" type="checkbox"> Developer alerts (POST http://127.0.0.1:17341/notify)
+          </label>
+          <label class="general-row">
+            <span>Avatar</span>
+            <select id="avatarSelect" aria-label="Companion avatar">
+              <option value="dragon">Dragon (classic)</option>
+              <option value="buddy">Buddy (rigged)</option>
+              <option value="robo">Robo (rigged)</option>
+            </select>
+          </label>
+          <label class="general-row">
+            <span>Companion colour</span>
+            <select id="skinSelect" aria-label="Companion colour">
+              <option value="original">Original</option>
+              <option value="sunset">Sunset</option>
+              <option value="ocean">Ocean</option>
+            </select>
+          </label>
+          <label class="general-row toggle">
+            <input id="openAtLogin" type="checkbox"> Launch at startup
+          </label>
+          <div class="general-row hint">Shortcut: <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> calls the companion</div>
+          <div class="general-row">
+            <span>Close the companion completely</span>
+            <button id="quitApp" class="tiny secondary quit" type="button">Quit</button>
+          </div>
+        </div>
+
+        <footer class="panel-actions">
+          <button id="testNotification" class="secondary">Test notification</button>
+          <button id="saveSettings" class="primary">Save</button>
+        </footer>
+      </section>
+    </main>
+
+    <script src="./model.js"></script>
+    <script src="./vendor/three.min.js"></script>
+    <script src="./vendor/GLTFLoader.js"></script>
+    <script src="./model3d.js"></script>
+    <script src="./sounds.js"></script>
+    <script src="./renderer.js"></script>
+  </body>
+</html>

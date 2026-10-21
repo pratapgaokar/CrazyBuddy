@@ -49,6 +49,15 @@ reminderDefinitions.test = {
   guide: { seconds: 6, steps: [[0, 'This is a guided break.'], [3, 'I count it down for you.']], done: 'That is how it works!' }
 };
 
+const CHARACTER_PROFILES = Object.freeze({
+  cinder: { name: 'Cinder', tagline: 'Focus dragon', avatar: 'dragon', skin: 'original', greeting: 'Cinder is ready to help you focus.' },
+  ember: { name: 'Ember', tagline: 'Bright dragon', avatar: 'dragon', skin: 'sunset', greeting: 'Ember brings a little more energy.' },
+  tide: { name: 'Tide', tagline: 'Calm dragon', avatar: 'dragon', skin: 'ocean', greeting: 'Tide is keeping things calm.' },
+  pip: { name: 'Pip', tagline: 'Friendly buddy', avatar: 'buddy', skin: 'original', greeting: 'Pip is happy to see you.' },
+  orbit: { name: 'Orbit', tagline: 'Steady navigator', avatar: 'robo', skin: 'ocean', greeting: 'Orbit is online and steady.' },
+  nova: { name: 'Nova', tagline: 'High-energy robo', avatar: 'robo', skin: 'sunset', greeting: 'Nova is ready for a productive run.' }
+});
+
 let activeReminder = null;
 let lastReminder = null;
 let reminderSceneTimer;
@@ -115,6 +124,10 @@ const dashboardFocus = document.querySelector('#dashboardFocus');
 const dashboardWater = document.querySelector('#dashboardWater');
 const dashboardMeeting = document.querySelector('#dashboardMeeting');
 const dashboardMood = document.querySelector('#dashboardMood');
+const characterPicker = document.querySelector('#characterPicker');
+const characterName = document.querySelector('#characterName');
+const characterTagline = document.querySelector('#characterTagline');
+const characterSwitch = document.querySelector('#characterSwitch');
 const exportDataBtn = document.querySelector('#exportData');
 const openDiagnosticsBtn = document.querySelector('#openDiagnostics');
 const clearDataBtn = document.querySelector('#clearData');
@@ -122,8 +135,11 @@ const dataStatus = document.querySelector('#dataStatus');
 
 
 function setBubble(text) {
+  const quiet = new Set(['Ready when you are.', 'See you soon!', 'Hi! I am here.']).has(text);
   bubbleText.textContent = text;
   status.textContent = text;
+  bubble.classList.toggle('is-quiet', quiet);
+  status.classList.toggle('is-quiet', quiet);
 }
 
 function setCharacterState(...states) {
@@ -164,6 +180,53 @@ function renderQuickActions() {
     button.append(glyph, label);
     quickActions.appendChild(button);
   }
+}
+
+
+function currentCharacterId() {
+  const requested = settings && settings.appearance && settings.appearance.character;
+  if (requested && CHARACTER_PROFILES[requested]) return requested;
+  const appearance = (settings && settings.appearance) || {};
+  return Object.entries(CHARACTER_PROFILES).find(([, profile]) => profile.avatar === appearance.avatar && profile.skin === appearance.skin)?.[0] || 'cinder';
+}
+
+function renderCharacterPicker() {
+  if (!characterPicker || !settings) return;
+  const selected = currentCharacterId();
+  const profile = CHARACTER_PROFILES[selected];
+  characterName.textContent = profile.name;
+  characterTagline.textContent = profile.tagline;
+  characterPicker.innerHTML = '';
+  for (const [id, item] of Object.entries(CHARACTER_PROFILES)) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `character-option${id === selected ? ' is-selected' : ''}`;
+    button.dataset.characterId = id;
+    button.setAttribute('aria-pressed', String(id === selected));
+    const preview = document.createElement('span');
+    preview.className = `character-preview preview-${item.avatar} preview-${item.skin}`;
+    preview.setAttribute('aria-hidden', 'true');
+    const details = document.createElement('span');
+    details.className = 'character-option-copy';
+    const name = document.createElement('strong');
+    name.textContent = item.name;
+    const tagline = document.createElement('small');
+    tagline.textContent = item.tagline;
+    details.append(name, tagline);
+    button.append(preview, details);
+    characterPicker.appendChild(button);
+  }
+}
+
+async function chooseCharacter(id) {
+  const profile = CHARACTER_PROFILES[id];
+  if (!profile || !settings) return;
+  settings.appearance = { ...(settings.appearance || {}), character: id, avatar: profile.avatar, skin: profile.skin };
+  settings = await window.companionApi.setSettings(settings);
+  renderSettings();
+  setBubble(profile.greeting);
+  if (characterPicker) characterPicker.hidden = true;
+  if (characterSwitch) characterSwitch.setAttribute('aria-expanded', 'false');
 }
 
 function renderSettings() {
@@ -227,6 +290,7 @@ function renderSettings() {
   applyAvatar();
   syncAmbient();
   syncInteractionState({ panelOpen: panel.classList.contains('open'), activeReminder: !!activeReminder, guided });
+  renderCharacterPicker();
 }
 
 /* ---------------------- meetings (calendar link) ---------------------- */
@@ -1105,6 +1169,17 @@ if (skinSelect) skinSelect.addEventListener('change', () => {
 if (avatarSelect) avatarSelect.addEventListener('change', () => {
   settings.appearance = { ...(settings.appearance || {}), avatar: avatarSelect.value };
   applyAvatar();
+});
+
+if (characterSwitch) characterSwitch.addEventListener('click', () => {
+  if (!characterPicker) return;
+  characterPicker.hidden = !characterPicker.hidden;
+  characterSwitch.setAttribute('aria-expanded', String(!characterPicker.hidden));
+});
+if (characterPicker) characterPicker.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-character-id]');
+  if (!button) return;
+  chooseCharacter(button.dataset.characterId).catch(() => setBubble('I could not switch characters.'));
 });
 
 document.querySelectorAll('[data-focus-start]').forEach((btn) => {

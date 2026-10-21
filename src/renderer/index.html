@@ -53,6 +53,14 @@
           </button>
         </section>
 
+        <section class="character-dock" aria-label="Current companion">
+          <div class="character-dock-heading">
+            <div><strong id="characterName">Cinder</strong><small id="characterTagline">Focus dragon</small></div>
+            <button id="characterSwitch" class="tiny secondary" type="button" aria-expanded="false">Switch</button>
+          </div>
+          <div id="characterPicker" class="character-picker" hidden role="listbox" aria-label="Choose a companion"></div>
+        </section>
+
         <section id="onboarding" class="onboarding" hidden>
           <strong>Welcome — let’s make this yours</strong>
           <p>Choose your reminder rhythm and water goal below. You can connect a private calendar later under Meetings. CerebraQ keeps your settings, calendar link, and history on this PC.</p>
@@ -181,22 +189,18 @@
           <label class="general-row toggle">
             <input id="devAlerts" type="checkbox"> Developer alerts (POST http://127.0.0.1:17341/notify)
           </label>
-          <label class="general-row">
-            <span>Avatar</span>
+          <div class="legacy-character-controls" hidden aria-hidden="true">
             <select id="avatarSelect" aria-label="Companion avatar">
               <option value="dragon">Dragon (classic)</option>
               <option value="buddy">Buddy (rigged)</option>
               <option value="robo">Robo (rigged)</option>
             </select>
-          </label>
-          <label class="general-row">
-            <span>Companion colour</span>
             <select id="skinSelect" aria-label="Companion colour">
               <option value="original">Original</option>
               <option value="sunset">Sunset</option>
               <option value="ocean">Ocean</option>
             </select>
-          </label>
+          </div>
           <label class="general-row toggle">
             <input id="openAtLogin" type="checkbox"> Launch at startup
           </label>

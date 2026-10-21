@@ -5,6 +5,7 @@
 
 const SKINS = ['original', 'sunset', 'ocean'];
 const AVATARS = ['dragon', 'buddy', 'robo'];
+const CHARACTERS = ['cinder', 'ember', 'tide', 'pip', 'orbit', 'nova'];
 const AMBIENTS = ['off', 'rain', 'storm', 'birds', 'sea', 'forest', 'cafe'];
 const ANIMS = ['full', 'calm'];
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -78,6 +79,7 @@ function sanitizeSettings(input, current, defaults, reminderKeys, presetKeys = [
   const skinCur = cur.appearance && typeof cur.appearance === 'object' ? cur.appearance.skin : undefined;
   const appIn = src.appearance && typeof src.appearance === 'object' ? src.appearance : {};
   const appCur = cur.appearance && typeof cur.appearance === 'object' ? cur.appearance : {};
+  const character = CHARACTERS.includes(appIn.character) ? appIn.character : CHARACTERS.includes(appCur.character) ? appCur.character : 'cinder';
   const pct = (v) => (Number.isFinite(Number(v)) ? Math.min(0.9, Math.max(0.02, Number(v))) : null);
   const sndIn = src.sound && typeof src.sound === 'object' ? src.sound : {};
   const sndCur = cur.sound && typeof cur.sound === 'object' ? cur.sound : {};
@@ -111,6 +113,7 @@ function sanitizeSettings(input, current, defaults, reminderKeys, presetKeys = [
         : typeof profCur.birthday === 'string' && BIRTHDAY_RE.test(profCur.birthday) ? profCur.birthday : ''
     },
     appearance: {
+      character,
       avatar: AVATARS.includes(appIn.avatar) ? appIn.avatar : AVATARS.includes(appCur.avatar) ? appCur.avatar : 'dragon',
       skin: SKINS.includes(skinIn) ? skinIn : SKINS.includes(skinCur) ? skinCur : 'original',
       homePct: pct(appIn.homePct) ?? pct(appCur.homePct) ?? 0.2,
@@ -146,4 +149,4 @@ function scheduledDue(item, date, fired = {}) {
   return fired[item.id] !== dateKeyOf(date);
 }
 
-module.exports = { SKINS, AVATARS, AMBIENTS, ANIMS, clampMinutes, sanitizeCalendar, sanitizeCustom, sanitizeSettings, toMinutes, inQuietHours, scheduledDue, dateKeyOf };
+module.exports = { SKINS, AVATARS, CHARACTERS, AMBIENTS, ANIMS, clampMinutes, sanitizeCalendar, sanitizeCustom, sanitizeSettings, toMinutes, inQuietHours, scheduledDue, dateKeyOf };

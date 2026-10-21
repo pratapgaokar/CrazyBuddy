@@ -91,7 +91,7 @@ const DEFAULTS = {
   respectFullscreen: true,
   sound: { volume: 0.7, chime: true, ambient: 'off' },
   profile: { birthday: '' },
-  appearance: { skin: 'original', homePct: 0.2, anim: 'full' },
+  appearance: { character: 'cinder', skin: 'original', homePct: 0.2, anim: 'full' },
   calendar: { enabled: true, leadMinutes: 5, alertAtStart: true, notifyInvites: true },
   custom: [],
   hydrationGoal: 8,

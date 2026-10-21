@@ -63,6 +63,7 @@ without requiring an account or an AI provider:
 - Long-press the companion to pet it; drag it to choose a new home position.
 - Move the pointer around the companion to make it look left, center, or right.
 - Use the compact dashboard to see focus, water, next meeting, and mood at a glance.
+- Switch between six named character presets: Cinder, Ember, Tide, Pip, Orbit, and Nova.
 - Press `Ctrl+Alt+C` to wake the companion from Sleep mode.
 
 ## Reproducible setup

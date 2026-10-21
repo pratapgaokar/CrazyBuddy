@@ -130,3 +130,11 @@ test('sanitizeSettings: avatar whitelist', () => {
   assert.strictEqual(clean({ appearance: { avatar: 'hacker' } }).appearance.avatar, 'dragon');
   assert.strictEqual(clean({}).appearance.avatar, 'dragon');
 });
+
+
+test('sanitizeSettings keeps a whitelisted character preset', () => {
+  const selected = clean({ appearance: { character: 'orbit' } });
+  assert.strictEqual(selected.appearance.character, 'orbit');
+  const fallback = clean({ appearance: { character: 'unknown-character' } });
+  assert.strictEqual(fallback.appearance.character, 'cinder');
+});

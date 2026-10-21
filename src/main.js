@@ -182,6 +182,7 @@ function publicSettings() {
     screenTodayMinutes: Math.floor(screenTodayMs() / 60000),
     historySummary: historyMod.summarize(history || {}, todayKey(), store.get('hydrationGoal') || DEFAULTS.hydrationGoal),
     focus: focusState(),
+    sleeping: manualSleep,
     appVersion: app.getVersion(),
     diagnostics: { logFile: log.file() }
   };
@@ -235,6 +236,7 @@ let awaySince = null;
 let active = null; // { key, timer }
 let cooldownUntil = 0;
 let pausedUntil = 0;
+let manualSleep = false;
 let suspended = false;
 let locked = false;
 
@@ -272,6 +274,7 @@ function screenOn() {
 function showCompanion({ focus = false } = {}) {
   if (!mainWindow) return;
   if (focus) {
+    manualSleep = false;
     mainWindow.show();
     mainWindow.focus();
     mainWindow.webContents.send('companion:summon');
@@ -289,6 +292,7 @@ function notify(title, body) {
 // (custom reminders, meetings, invites): { kind, label, message, yesLabel, laterLabel,
 // yesReply, laterReply, guide }.
 function fireReminder(key, { test = false, payload = null, title = null, body = null, meta = null } = {}) {
+  if (manualSleep && !test) return false;
   if (active) return false;
   let def;
   if (test) def = { label: 'Test', notification: 'CerebraQ Companion is ready.' };
@@ -737,7 +741,7 @@ function tick() {
   lastTick = now;
 
   // Sleep or lock: the screen is not being looked at, so nothing counts.
-  if (suspended || locked) { flushScreenTime(); return; }
+  if (suspended || locked || manualSleep) { flushScreenTime(); return; }
 
   // Total screen time today: accumulate in memory, flush to disk at most
   // every 5 minutes (the panel/tray read the in-memory total).
@@ -909,6 +913,7 @@ function buildTrayMenu() {
   const paused = Date.now() < pausedUntil;
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Show Companion  (Ctrl+Alt+C opens the panel)', click: () => showCompanion({ focus: true }) },
+    { label: manualSleep ? 'Wake Companion' : 'Sleep Companion', click: () => { manualSleep = !manualSleep; if (manualSleep) { resetAllTimers(); mainWindow.hide(); } else showCompanion({ focus: true }); buildTrayMenu(); } },
     { label: 'Hide until next reminder', click: () => mainWindow.hide() },
     { type: 'separator' },
     { label: `Water today: ${hydrationToday()} / ${store.get('hydrationGoal')}`, enabled: false },
@@ -1038,6 +1043,25 @@ ipcMain.handle('window:hide', () => mainWindow.hide());
 ipcMain.handle('window:set-panel', (_event, open) => {
   panelOpen = !!open;
   layoutWindow();
+});
+
+ipcMain.handle('hydration:add', () => {
+  addGlass();
+  return publicSettings();
+});
+
+ipcMain.handle('companion:sleep', (_event, sleep) => {
+  manualSleep = !!sleep;
+  if (manualSleep) {
+    resetAllTimers();
+    panelOpen = false;
+    if (mainWindow) mainWindow.hide();
+  } else {
+    showCompanion({ focus: true });
+  }
+  buildTrayMenu();
+  if (mainWindow) mainWindow.webContents.send('settings:changed', publicSettings());
+  return publicSettings();
 });
 
 function startFocus(minutes) {
@@ -1232,6 +1256,7 @@ app.whenReady().then(() => {
   // Global shortcut: summon the companion and toggle its panel from anywhere.
   const ok = globalShortcut.register(SHORTCUT, () => {
     if (!mainWindow) return;
+    if (manualSleep) { manualSleep = false; resetAllTimers(); buildTrayMenu(); mainWindow.webContents.send('settings:changed', publicSettings()); }
     mainWindow.show();
     mainWindow.webContents.send('companion:toggle-panel');
   });

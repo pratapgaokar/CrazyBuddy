@@ -52,6 +52,19 @@ npm run dist
 
 `npm run dist` creates a Windows NSIS x64 installer in the `release/` folder. `npm run release:win` runs the checks first and then builds the installer. `npm run release:publish` does the same and asks electron-builder to publish to GitHub Releases; it requires `GH_TOKEN`.
 
+## Desktop Companion Shell
+
+The current desktop-companion milestone adds a PixelFriend-style interaction layer
+without requiring an account or an AI provider:
+
+- Right-click the companion to open radial quick actions.
+- Start a 25-minute focus session or add a glass of water without opening the panel.
+- Cycle the companion's mood, celebrate, or put it into Sleep mode.
+- Long-press the companion to pet it; drag it to choose a new home position.
+- Move the pointer around the companion to make it look left, center, or right.
+- Use the compact dashboard to see focus, water, next meeting, and mood at a glance.
+- Press `Ctrl+Alt+C` to wake the companion from Sleep mode.
+
 ## Reproducible setup
 
 The supported runtime is pinned in `.nvmrc`, dependencies are pinned in `package-lock.json`, and npm uses the project-local `.npm-cache` when using the Makefile.

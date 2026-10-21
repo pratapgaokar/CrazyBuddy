@@ -17,6 +17,7 @@
             <span class="face"></span>
           </span>
         </button>
+        <div id="quickActions" class="quick-actions" hidden aria-label="Quick actions"></div>
         <div id="bubble" class="bubble">
           <span id="bubbleText">Ready when you are.</span>
           <div id="breakProgress" class="break-progress" hidden><span id="breakBar"></span></div>
@@ -36,6 +37,21 @@
           </div>
           <button id="hideWindow" class="icon-button" aria-label="Hide companion">×</button>
         </header>
+
+        <section id="dashboardStrip" class="dashboard-strip" aria-label="Daily dashboard">
+          <button class="dashboard-card" type="button" data-dashboard-action="focus">
+            <span class="dashboard-icon" aria-hidden="true">◷</span><span><small>Focus</small><strong id="dashboardFocus">Ready</strong></span>
+          </button>
+          <button class="dashboard-card" type="button" data-dashboard-action="water">
+            <span class="dashboard-icon" aria-hidden="true">◒</span><span><small>Water</small><strong id="dashboardWater">0 / 8</strong></span>
+          </button>
+          <button class="dashboard-card" type="button" data-dashboard-action="meetings">
+            <span class="dashboard-icon" aria-hidden="true">▣</span><span><small>Next meeting</small><strong id="dashboardMeeting">None</strong></span>
+          </button>
+          <button class="dashboard-card" type="button" data-dashboard-action="mood">
+            <span class="dashboard-icon" aria-hidden="true">✦</span><span><small>Buddy mood</small><strong id="dashboardMood">Neutral</strong></span>
+          </button>
+        </section>
 
         <section id="onboarding" class="onboarding" hidden>
           <strong>Welcome — let’s make this yours</strong>
@@ -215,6 +231,7 @@
     <script src="./vendor/GLTFLoader.js"></script>
     <script src="./model3d.js"></script>
     <script src="./sounds.js"></script>
+    <script src="./interaction.js"></script>
     <script src="./renderer.js"></script>
   </body>
 </html>

@@ -109,6 +109,12 @@ const testSoundBtn = document.querySelector('#testSound');
 const birthdayInput = document.querySelector('#birthdayInput');
 const fullscreenToggle = document.querySelector('#fullscreenToggle');
 const animSelect = document.querySelector('#animSelect');
+const quickActions = document.querySelector('#quickActions');
+const dashboardStrip = document.querySelector('#dashboardStrip');
+const dashboardFocus = document.querySelector('#dashboardFocus');
+const dashboardWater = document.querySelector('#dashboardWater');
+const dashboardMeeting = document.querySelector('#dashboardMeeting');
+const dashboardMood = document.querySelector('#dashboardMood');
 const exportDataBtn = document.querySelector('#exportData');
 const openDiagnosticsBtn = document.querySelector('#openDiagnostics');
 const clearDataBtn = document.querySelector('#clearData');
@@ -122,6 +128,42 @@ function setBubble(text) {
 
 function setCharacterState(...states) {
   character.className = ['character', ...states].join(' ');
+}
+
+const interactionApi = window.CompanionInteraction || null;
+let interactionState = interactionApi
+  ? { ...interactionApi.DEFAULT_STATE, isOnScreen: false }
+  : { mood: 'neutral', panelOpen: false, isOnScreen: false, activeReminder: false, guided: false, justDragged: false };
+const quickGlyphs = { settings: '⚙', focus: '◷', water: '◒', mood: '✦', sparkles: '✧', moon: '☾' };
+
+function syncInteractionState(patch = {}) {
+  interactionState = { ...interactionState, ...patch };
+  renderQuickActions();
+  renderDashboard();
+}
+
+function renderQuickActions() {
+  if (!quickActions || !interactionApi) return;
+  quickActions.innerHTML = '';
+  for (const action of interactionApi.getRadialActions(interactionState)) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'quick-action';
+    button.dataset.quickAction = action.id;
+    button.style.setProperty('--quick-angle', `${action.angleDeg}deg`);
+    button.disabled = !action.enabled;
+    button.title = action.disabledReason ? `${action.label} (${action.disabledReason})` : action.label;
+    button.setAttribute('aria-label', button.title);
+    const glyph = document.createElement('span');
+    glyph.className = 'quick-glyph';
+    glyph.setAttribute('aria-hidden', 'true');
+    glyph.textContent = quickGlyphs[action.icon] || '•';
+    const label = document.createElement('span');
+    label.className = 'quick-label';
+    label.textContent = action.label;
+    button.append(glyph, label);
+    quickActions.appendChild(button);
+  }
 }
 
 function renderSettings() {
@@ -184,6 +226,7 @@ function renderSettings() {
   if (avatarSelect) avatarSelect.value = (settings.appearance && settings.appearance.avatar) || 'dragon';
   applyAvatar();
   syncAmbient();
+  syncInteractionState({ panelOpen: panel.classList.contains('open'), activeReminder: !!activeReminder, guided });
 }
 
 /* ---------------------- meetings (calendar link) ---------------------- */
@@ -357,6 +400,7 @@ function renderWater() {
   const m = settings.screenTodayMinutes || 0;
   screenToday.textContent = `Screen time today: ${m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`}`;
   renderHistory();
+  renderDashboard();
 }
 
 function renderHistory() {
@@ -391,6 +435,20 @@ function renderFocus() {
     focusStatus.textContent = 'Not focusing. While a focus session runs, reminders pause but meeting alerts still arrive.';
   }
   syncAmbient();
+  renderDashboard();
+}
+
+function renderDashboard() {
+  if (!dashboardStrip || !settings) return;
+  const focus = settings.focus && settings.focus.active ? `${Math.max(1, Math.round(settings.focus.remainingMs / 60000))}m` : 'Ready';
+  const water = `${settings.hydrationToday || 0} / ${settings.hydrationGoal || 8}`;
+  const next = settings.calendar && settings.calendar.next;
+  const meeting = next ? `${String(next.title || 'Meeting').slice(0, 17)}${next.start ? ` · ${fmtTime(next.start)}` : ''}` : 'None';
+  dashboardFocus.textContent = focus;
+  dashboardWater.textContent = water;
+  dashboardMeeting.textContent = meeting;
+  dashboardMood.textContent = `${interactionState.mood[0].toUpperCase()}${interactionState.mood.slice(1)}`;
+  dashboardStrip.dataset.sleeping = settings.sleeping ? 'true' : 'false';
 }
 
 function applySkin() {
@@ -540,6 +598,7 @@ async function walkIn(token) {
   const arrived = await walkTo(homeX(), { settle: true, token });
   if (!arrived) return false;
   setCharacterState('is-at-reminder');
+  syncInteractionState({ isOnScreen: true });
   model.set({ facing: 0, mood: 'neutral' });
   return pause(500, token); // turn to face the user
 }
@@ -554,6 +613,7 @@ async function walkOff(direction, { mood, speed, token }) {
   // Fully off screen: let go of the mouse and have the (screen-wide, transparent)
   // window hide itself so nothing invisible can sit over the desktop.
   setInteractive(false);
+  syncInteractionState({ isOnScreen: false, panelOpen: false });
   window.companionApi.companionAway();
 }
 
@@ -585,6 +645,7 @@ async function triggerReminder(key, payload) {
   model.setProp(key === 'water' ? 'glass' : null);
   setActionLabels(definition);
   activeReminder = definition;
+  syncInteractionState({ activeReminder: true });
   lastReminder = definition;
   clearTimeout(reminderSceneTimer);
   const token = ++sceneToken;
@@ -619,6 +680,7 @@ let skipGuide = false;
 // 'cancelled' (something else took over the scene).
 async function runGuide(guide, token) {
   guided = true;
+  syncInteractionState({ guided: true });
   skipGuide = false;
   breakProgress.hidden = false;
   skipBreak.hidden = false;
@@ -641,6 +703,7 @@ async function runGuide(guide, token) {
     if (!(await pause(250, token))) { result = 'cancelled'; break; }
   }
   guided = false;
+  syncInteractionState({ guided: false });
   breakProgress.hidden = true;
   skipBreak.hidden = true;
   return result;
@@ -661,6 +724,7 @@ async function answerReminder(answer) {
   clearTimeout(reminderSceneTimer);
   const token = ++sceneToken;
   activeReminder = null;
+  syncInteractionState({ activeReminder: false });
   const result = window.companionApi.answerReminder(answer);
 
   if (answer === 'yes') {
@@ -702,6 +766,7 @@ async function answerReminder(answer) {
 async function dismissReminder() {
   if (!activeReminder) return;
   activeReminder = null;
+  syncInteractionState({ activeReminder: false });
   bubbleActions.hidden = true;
   clearTimeout(reminderSceneTimer);
   const token = ++sceneToken;
@@ -731,6 +796,7 @@ function stay() {
   clearTimeout(reminderSceneTimer);
   model.set({ walking: false, speed: 0, mood: 'neutral', facing: 0 });
   setCharacterState('is-at-reminder');
+  syncInteractionState({ isOnScreen: true });
 }
 
 // Say goodbye and walk off. Reminders still arrive; the companion walks back
@@ -767,6 +833,7 @@ function refreshLive() {
 function openPanel() {
   stay();
   panel.classList.add('open');
+  syncInteractionState({ panelOpen: true });
   model.wink('right', 700); // acknowledge
   refreshLive();
 }
@@ -778,19 +845,109 @@ function openPanel() {
    the click that follows it. */
 let dragState = null;
 let justDragged = false;
+let petTimer = null;
+let petTriggered = false;
+
+function clearPetTimer() {
+  if (petTimer) clearTimeout(petTimer);
+  petTimer = null;
+}
+
+function openQuickActions() {
+  if (!quickActions || interactionState.guided) return;
+  renderQuickActions();
+  quickActions.hidden = false;
+  setInteractive(true);
+}
+
+function closeQuickActions() {
+  if (!quickActions) return;
+  quickActions.hidden = true;
+}
+
+async function runQuickAction(actionId) {
+  if (!interactionApi) return;
+  const decision = interactionApi.decideInteraction(interactionState, { type: 'radial-action', actionId });
+  syncInteractionState(decision.nextState);
+  if (!decision.accepted) return;
+  closeQuickActions();
+  if (actionId === 'controls') {
+    openPanel();
+  } else if (actionId === 'focus') {
+    settings = await window.companionApi.focusStart(25);
+    renderSettings();
+    setBubble('Focus mode is on. I will guard your time.');
+  } else if (actionId === 'water') {
+    settings = await window.companionApi.addWater();
+    renderWater();
+    setBubble(`Nice. ${settings.hydrationToday} of ${settings.hydrationGoal} glasses today.`);
+  } else if (actionId === 'mood') {
+    const mood = interactionState.mood;
+    model.set({ mood, facing: 0 });
+    setCharacterState(mood === 'neutral' ? 'is-at-reminder' : `is-${mood}`);
+    setBubble(mood === 'happy' ? 'Feeling bright!' : mood === 'sad' ? 'A little sleepy today.' : 'Back to neutral.');
+  } else if (actionId === 'celebrate') {
+    await celebrate();
+  } else if (actionId === 'sleep') {
+    settings = await window.companionApi.setSleepMode(true);
+    setBubble('Sleep mode on. Press Ctrl+Alt+C when you want me back.');
+  }
+}
+
+if (quickActions) {
+  quickActions.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-quick-action]');
+    if (!button || button.disabled) return;
+    event.preventDefault();
+    event.stopPropagation();
+    runQuickAction(button.dataset.quickAction).catch(() => setBubble('That action did not work.'));
+  });
+}
+
+if (dashboardStrip) {
+  dashboardStrip.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-dashboard-action]');
+    if (!button) return;
+    event.preventDefault();
+    const action = button.dataset.dashboardAction;
+    if (action === 'focus') runQuickAction('focus');
+    else if (action === 'water') runQuickAction('water');
+    else if (action === 'meetings') {
+      document.querySelector('#meetingsFold').open = true;
+      setBubble('Here are your upcoming meetings.');
+    } else if (action === 'mood') runQuickAction('mood');
+  });
+}
+
+characterBody.addEventListener('contextmenu', (event) => {
+  event.preventDefault();
+  if (quickActions && quickActions.hidden) openQuickActions();
+  else closeQuickActions();
+});
 
 characterBody.addEventListener('pointerdown', (event) => {
   dragState = { x: event.clientX, pos: posX, moved: false };
+  petTriggered = false;
+  clearPetTimer();
+  petTimer = setTimeout(() => {
+    if (!dragState || dragState.moved || activeReminder || guided) return;
+    petTriggered = true;
+    model.wink('right', 700);
+    syncInteractionState({ mood: 'happy', justDragged: true });
+    setBubble('That tickles!');
+  }, 700);
   try { characterBody.setPointerCapture(event.pointerId); } catch { /* older WebView */ }
 });
 characterBody.addEventListener('pointermove', (event) => {
   if (!dragState) return;
   const dx = event.clientX - dragState.x;
   if (!dragState.moved && Math.abs(dx) > 7) {
+    clearPetTimer();
     dragState.moved = true;
     sceneToken += 1;
     clearTimeout(reminderSceneTimer);
     panel.classList.remove('open');
+    syncInteractionState({ panelOpen: false, justDragged: true });
     model.set({ walking: false, speed: 0, mood: 'neutral' });
     setCharacterState('is-at-reminder');
   }
@@ -798,26 +955,34 @@ characterBody.addEventListener('pointermove', (event) => {
     setX(Math.min(window.innerWidth - 150, Math.max(-70, dragState.pos + dx)));
   }
 });
-characterBody.addEventListener('pointerup', () => {
+function finishPointer() {
+  clearPetTimer();
   if (dragState && dragState.moved) {
     justDragged = true;
     const pct = Math.round((posX / window.innerWidth) * 1000) / 1000;
     if (settings) settings.appearance = { ...(settings.appearance || {}), homePct: pct };
     window.companionApi.setHome(pct);
     setBubble('This is my spot now.');
+  } else if (petTriggered) {
+    justDragged = true;
   }
+  syncInteractionState({ justDragged });
   dragState = null;
-});
+}
+characterBody.addEventListener('pointerup', finishPointer);
+characterBody.addEventListener('pointercancel', finishPointer);
 
 function waveHop() {
   if (activeReminder) return;
+  syncInteractionState({ mood: 'happy' });
   model.set({ mood: 'happy' });
-  setTimeout(() => { if (!activeReminder) model.set({ mood: 'neutral' }); }, 650);
+  setTimeout(() => { if (!activeReminder) { syncInteractionState({ mood: 'neutral' }); model.set({ mood: 'neutral' }); } }, 650);
 }
 
 async function celebrate() {
   if (guided || activeReminder) return;
   panel.classList.remove('open');
+  syncInteractionState({ panelOpen: false, mood: 'happy' });
   const token = ++sceneToken;
   clearTimeout(reminderSceneTimer);
   setCharacterState('is-happy', 'is-at-reminder');
@@ -829,18 +994,28 @@ async function celebrate() {
   model.set({ mood: 'neutral' });
   setBubble('Ready when you are.');
 }
-characterBody.addEventListener('dblclick', () => { celebrate(); });
+characterBody.addEventListener('dblclick', () => {
+  if (!interactionApi) return celebrate();
+  const decision = interactionApi.decideInteraction(interactionState, { type: 'double-click' });
+  syncInteractionState(decision.nextState);
+  if (decision.accepted) celebrate();
+});
 
 characterBody.addEventListener('click', () => {
-  if (guided) return; // don't interrupt a guided break
-  if (justDragged) { justDragged = false; return; }
-  if (panel.classList.contains('open')) {
-    panel.classList.remove('open');
-    leave('See you later!');
-  } else {
-    waveHop();
-    openPanel();
+  if (!interactionApi) {
+    if (guided) return;
+    if (justDragged) { justDragged = false; return; }
+    if (panel.classList.contains('open')) { panel.classList.remove('open'); leave('See you later!'); }
+    else { waveHop(); openPanel(); }
+    return;
   }
+  const decision = interactionApi.decideInteraction(interactionState, { type: 'click' });
+  syncInteractionState(decision.nextState);
+  if (!decision.accepted) { justDragged = false; return; }
+  if (decision.effects.includes('wave')) waveHop();
+  if (decision.effects.includes('open-panel')) openPanel();
+  if (decision.effects.includes('close-panel')) panel.classList.remove('open');
+  if (decision.effects.includes('leave')) leave('See you later!');
 });
 
 // Global shortcut (Ctrl+Alt+C): call the companion and toggle its panel.
@@ -956,7 +1131,9 @@ if (onboardDone) onboardDone.addEventListener('click', async () => {
 // Panel open/close drives the window height in the main process: small
 // (character only) while closed, full height while the panel is open.
 new MutationObserver(() => {
-  window.companionApi.setPanelOpen(panel.classList.contains('open'));
+  const open = panel.classList.contains('open');
+  syncInteractionState({ panelOpen: open });
+  window.companionApi.setPanelOpen(open);
 }).observe(panel, { attributes: true, attributeFilter: ['class'] });
 
 // Battery: Chromium's Battery API lives in the renderer; the main process
@@ -1033,8 +1210,17 @@ document.addEventListener('mousemove', (event) => {
     mouseMoveQueued = false;
     if (!lastMouseEvent) return;
     const el = document.elementFromPoint(lastMouseEvent.clientX, lastMouseEvent.clientY);
-    setInteractive(!!(el && el.closest('#characterBody, #bubble, #panel')));
+    setInteractive(!!(el && el.closest('#characterBody, #bubble, #panel, #quickActions, #dashboardStrip')));
+    if (!guided && !activeReminder && interactionState.isOnScreen && characterBody) {
+      const rect = characterBody.getBoundingClientRect();
+      const look = lastMouseEvent.clientX < rect.left + rect.width * 0.38 ? -1
+        : lastMouseEvent.clientX > rect.left + rect.width * 0.62 ? 1 : 0;
+      model.set({ facing: look });
+    }
   });
+});
+document.addEventListener('pointerdown', (event) => {
+  if (quickActions && !quickActions.hidden && !event.target.closest('#quickActions, #characterBody')) closeQuickActions();
 });
 document.addEventListener('mouseleave', () => setInteractive(false));
 

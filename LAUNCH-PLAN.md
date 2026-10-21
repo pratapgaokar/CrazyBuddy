@@ -22,6 +22,20 @@ Status reviewed against the current `0.9.0` tree. The repository root is the fol
 
 User settings, history, logs, and crash data are local to the PC. Calendar links use Electron `safeStorage`/Windows DPAPI when available, are not exposed to the renderer, and are removed by **Disconnect**. Calendar contents are fetched from the configured ICS URL; meeting URLs are opened only after the user presses **Join** and only for the supported host allowlist. Developer alerts are loopback-only. This local-data statement should remain in release notes and support material.
 
+## Current desktop-companion shell milestone
+
+The renderer now includes a deterministic interaction layer (`src/renderer/interaction.js`)
+and a compact shell for everyday use:
+
+- radial quick actions for controls, focus, water, mood, celebration, and sleep
+- compact dashboard cards for focus, water, next meeting, and mood
+- cursor-aware facing, long-press petting, and drag-to-place behavior
+- main-process Sleep mode that pauses screen-time/reminder scheduling until the global shortcut wakes the companion
+- pure interaction tests that keep the gesture/action rules regression-safe
+
+The next validation step is a real Windows smoke test of the click-through window,
+right-click menu, long-press gesture, Sleep mode, and global shortcut.
+
 ## Remaining external requirements
 
 - **GitHub repository and release credentials:** create `pratapgaokar/CrazyBuddy`, configure repository permissions, and store a suitable `GH_TOKEN` outside the repository. No token belongs in source, workflow files, or `.env` committed to git.

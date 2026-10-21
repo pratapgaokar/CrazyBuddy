@@ -9,6 +9,8 @@ function on(channel, callback) {
 
 contextBridge.exposeInMainWorld('companionApi', {
   getSettings: () => ipcRenderer.invoke('settings:get'),
+  addWater: () => ipcRenderer.invoke('hydration:add'),
+  setSleepMode: (sleep) => ipcRenderer.invoke('companion:sleep', !!sleep),
   exportData: () => ipcRenderer.invoke('data:export'),
   clearData: () => ipcRenderer.invoke('data:clear'),
   openDiagnostics: () => ipcRenderer.invoke('diagnostics:open'),
